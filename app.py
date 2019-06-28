@@ -5,7 +5,8 @@ from collections import OrderedDict
 
 from peewee import *
 
-
+# reads csv file into dictionaries, turns values of product_price and
+# product_quantity keys into integers
 with open('inventory.csv', newline='') as csvfile:
     productreader = csv.DictReader(csvfile, delimiter=',')
     products = list(productreader)
@@ -20,6 +21,7 @@ with open('inventory.csv', newline='') as csvfile:
 
 db = SqliteDatabase('inventory.db')
 
+
 class Product(Model):
     product_id = AutoField(primary_key=True)
     product_name = CharField(max_length=255, unique=True)
@@ -30,11 +32,14 @@ class Product(Model):
     class Meta:
         database = db
 
+
 def clear():
     """Clears the screen"""
     os.system('cls' if os.name == 'nt' else 'clear')
 
+
 def add_products():
+    """Adds products from csv to database"""
     for product in products:
         try:
             Product.create(
@@ -50,28 +55,29 @@ def add_products():
             product_status.date_updated = product['date_updated']
             product_status.save()
 
+
 def initialize():
     """Create the database and the table if they don't exist."""
     db.connect()
     db.create_tables([Product], safe=True)
 
+
 def menu_loop():
     """Show the menu"""
     choice = None
-    
     while choice != 'q':
         clear()
         print("Enter 'q' to quit.")
         for key, value in menu.items():
             print('{}) {}'.format(key, value.__doc__))
         choice = input('Action: ').lower().strip()
-        
         if choice in menu:
             menu[choice]()
         elif choice == 'q':
             break
         else:
             print('Your input is invalid. Please try again')
+
 
 def view_product():
     """View the details of a single product in the database"""
@@ -102,12 +108,13 @@ def view_product():
         print("Product ID: ", sel_product.product_id)
         print("Product name:", sel_product.product_name)
         print("Product quantity:", sel_product.product_quantity)
-        print("Product price:", sel_product.product_price)
-        print("Date updated:",timestamp)
+        print("Product price in $:", (sel_product.product_price / 100))
+        print("Date updated:", timestamp)
         choice = input(
             "\nTo search for another product press enter, "
             "to quit and go back to main menu enter 'q': "
             ).lower().strip()
+
 
 def add_product():
     """Add a new product"""
@@ -126,9 +133,9 @@ def add_product():
         while True:
             clear()
             try:
-                price = int(
+                price = int(float(
                     input("Price of product in $ (number format): ")
-                    ) * 100
+                    ) * 100)
             except ValueError:
                 input("Please use numbers. press enter to try again")
                 clear()
@@ -145,9 +152,10 @@ def add_product():
             Product.update(
                 product_quantity=quantity,
                 product_price=price
-                ).where(Product.product_name==name).execute()
+                ).where(Product.product_name == name).execute()
         print("Product succesfully saved")
         choice = input("Press enter to add another product or 'q' to quit")
+
 
 def create_backup():
     """Make a backup of the entire contents of the database"""
@@ -156,8 +164,8 @@ def create_backup():
     with open('backup.csv', 'w') as csvfile:
         fieldnames = [
             'product_id', 'product_name',
-             'product_quantity', 'product_price',
-              'date_updated'
+            'product_quantity', 'product_price',
+            'date_updated'
         ]
         datawriter = csv.DictWriter(csvfile, fieldnames=fieldnames)
         datawriter.writeheader()
